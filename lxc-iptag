@@ -45,6 +45,7 @@ main() {
                 fi
             done
 
+            # Skip if no change
             if [[ "$(echo "${old_ips[@]}" | tr ' ' '\n' | sort -u)" == "$(echo "${new_ips[@]}" | tr ' ' '\n' | sort -u)" ]]; then
                 echo "Skipping ${lxc_name} cause ip no changes"
                 continue
@@ -52,7 +53,7 @@ main() {
 
             # Set the tags
             joined_tags=$(IFS=';'; echo "${new_tags[*]}")
-            echo "Setting ${lxc_name} tags to ${joined_tags}"
+            echo "Setting ${lxc_name} tags from ${old_tags} to ${joined_tags}"
             pct set ${lxc_name} -tags "${joined_tags}"
         done
         sleep 60
