@@ -27,9 +27,9 @@ main() {
             new_ips=()
 
             # Get tags
-            old_tags=$(pct config ${lxc_name} | grep tags | awk '{print $2}' | sed 's/;/ /g')
+            old_tags=$(pct config "${lxc_name}" | grep tags | awk '{print $2}' | sed 's/;/ /g')
             for old_tag in ${old_tags}; do
-                if is_valid_ipv4 ${old_tag}; then
+                if is_valid_ipv4 "${old_tag}"; then
                     old_ips+=("${old_tag}")
                     continue
                 fi
@@ -37,13 +37,19 @@ main() {
             done
 
             # Get the valid IPv4s
-            ips=$(lxc-info -n ${lxc_name} -i | awk '{print $2}')
+            ips=$(lxc-info -n "${lxc_name}" -i | awk '{print $2}')
             for ip in ${ips}; do
-                if is_valid_ipv4 ${ip}; then
+                if is_valid_ipv4 "${ip}"; then
                     new_ips+=("${ip}")
                     new_tags+=("${ip}")
                 fi
             done
+
+            # Skip if no ip
+            if [[ ${#new_ips[@]} -eq 0 ]]; then
+                echo "Skipping ${lxc_name} cause no ip found"
+                continue
+            fi
 
             # Skip if no change
             if [[ "$(echo "${old_ips[@]}" | tr ' ' '\n' | sort -u)" == "$(echo "${new_ips[@]}" | tr ' ' '\n' | sort -u)" ]]; then
@@ -54,7 +60,7 @@ main() {
             # Set the tags
             joined_tags=$(IFS=';'; echo "${new_tags[*]}")
             echo "Setting ${lxc_name} tags from ${old_tags} to ${joined_tags}"
-            pct set ${lxc_name} -tags "${joined_tags}"
+            pct set "${lxc_name}" -tags "${joined_tags}"
         done
         sleep 60
     done
