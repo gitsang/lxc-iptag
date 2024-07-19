@@ -1,0 +1,53 @@
+#!/bin/bash
+
+is_valid_ipv4() {
+    local ip=$1
+    local regex="^([0-9]{1,3}\.){3}[0-9]{1,3}$"
+
+    if [[ $ip =~ $regex ]]; then
+        IFS='.' read -r -a parts <<< "$ip"
+        for part in "${parts[@]}"; do
+            if ! [[ $part =~ ^[0-9]+$ ]] || ((part < 0 || part > 255)); then
+                return 1
+            fi
+        done
+        return 0
+    else
+        return 1
+    fi
+}
+
+main() {
+    while true; do
+        # Set the IP tags for all LXC containers
+        lxc_name_list=$(pct list 2>/dev/null | grep -v VMID | awk '{print $1}')
+        for lxc_name in ${lxc_name_list}; do
+            new_tags=()
+
+            # Get tags
+            old_tags=$(pct config ${lxc_name} | grep tags | awk '{print $2}' | sed 's/;/ /g')
+            for old_tag in ${old_tags}; do
+                if is_valid_ipv4 ${old_tag}; then
+                    continue
+                fi
+                new_tags+=("${old_tag}")
+            done
+
+            # Get the valid IPv4s
+            ips=$(lxc-info -n ${lxc_name} -i | awk '{print $2}')
+            for ip in ${ips}; do
+                if is_valid_ipv4 ${ip}; then
+                    new_tags+=("${ip}")
+                fi
+            done
+
+            # Set the tags
+            joined_tags=$(IFS=';'; echo "${new_tags[*]}")
+            echo "Setting ${lxc_name} tags to ${joined_tags}"
+            pct set ${lxc_name} -tags "${joined_tags}"
+        done
+        sleep 60
+    done
+}
+
+main
