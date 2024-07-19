@@ -23,11 +23,14 @@ main() {
         lxc_name_list=$(pct list 2>/dev/null | grep -v VMID | awk '{print $1}')
         for lxc_name in ${lxc_name_list}; do
             new_tags=()
+            old_ips=()
+            new_ips=()
 
             # Get tags
             old_tags=$(pct config ${lxc_name} | grep tags | awk '{print $2}' | sed 's/;/ /g')
             for old_tag in ${old_tags}; do
                 if is_valid_ipv4 ${old_tag}; then
+                    old_ips+=("${old_tag}")
                     continue
                 fi
                 new_tags+=("${old_tag}")
@@ -37,9 +40,15 @@ main() {
             ips=$(lxc-info -n ${lxc_name} -i | awk '{print $2}')
             for ip in ${ips}; do
                 if is_valid_ipv4 ${ip}; then
+                    new_ips+=("${ip}")
                     new_tags+=("${ip}")
                 fi
             done
+
+            if [[ "$(echo "${old_ips[@]}" | tr ' ' '\n' | sort -u)" == "$(echo "${new_ips[@]}" | tr ' ' '\n' | sort -u)" ]]; then
+                echo "Skipping ${lxc_name} cause ip no changes"
+                continue
+            fi
 
             # Set the tags
             joined_tags=$(IFS=';'; echo "${new_tags[*]}")
