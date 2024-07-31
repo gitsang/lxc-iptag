@@ -1,9 +1,38 @@
 #!/bin/bash
 
+cidr_list=(
+    192.168.0.0/16
+    100.64.0.0/10
+    10.0.0.0/8
+)
+
+ip_to_int() {
+    local ip="${1}"
+    local a b c d
+    IFS=. read -r a b c d <<< "${ip}"
+    echo "$((a << 24 | b << 16 | c << 8 | d))"
+}
+
+ip_in_cidr() {
+    local ip="${1}"
+    local cidr="${2}"
+    ip_int=$(ip_to_int "${ip}")
+    netmask_int=$(ip_to_int "$(ipcalc -b "${cidr}" | grep Broadcast | awk '{print $2}')")
+    masked_ip_int=$(( "${ip_int}" & "${netmask_int}" ))
+    [[ ${ip_int} -eq ${masked_ip_int} ]] && return 0 || return 1
+}
+
+ip_in_cidrs() {
+    local ip="${1}"
+    for cidr in "${cidr_list[@]}"; do
+        ip_in_cidr "${ip}" "${cidr}" && return 0
+    done
+    return 1
+}
+
 is_valid_ipv4() {
     local ip=$1
     local regex="^([0-9]{1,3}\.){3}[0-9]{1,3}$"
-
     if [[ $ip =~ $regex ]]; then
         IFS='.' read -r -a parts <<< "$ip"
         for part in "${parts[@]}"; do
@@ -39,17 +68,11 @@ main() {
             # Get the valid IPv4s
             ips=$(lxc-info -n "${lxc_name}" -i | awk '{print $2}')
             for ip in ${ips}; do
-                if is_valid_ipv4 "${ip}"; then
+                if is_valid_ipv4 "${ip}" && ip_in_cidrs "${ip}"; then
                     new_ips+=("${ip}")
                     new_tags+=("${ip}")
                 fi
             done
-
-            # Skip if no ip
-            if [[ ${#new_ips[@]} -eq 0 ]]; then
-                echo "Skipping ${lxc_name} cause no ip found"
-                continue
-            fi
 
             # Skip if no change
             if [[ "$(echo "${old_ips[@]}" | tr ' ' '\n' | sort -u)" == "$(echo "${new_ips[@]}" | tr ' ' '\n' | sort -u)" ]]; then
