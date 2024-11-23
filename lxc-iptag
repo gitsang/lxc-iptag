@@ -85,7 +85,7 @@ main() {
             echo "Setting ${lxc_name} tags from ${old_tags} to ${joined_tags}"
             pct set "${lxc_name}" -tags "${joined_tags}"
         done
-        sleep 60
+        sleep 1800
     done
 }
 
