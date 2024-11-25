@@ -7,8 +7,10 @@ CIDR_LIST=(
     100.64.0.0/10
     10.0.0.0/8
 )
-
-CHECK_INTERVAL=60
+LOOP_INTERVAL=60
+FW_NET_INTERFACE_CHECK_INTERVAL=60
+LXC_STATUS_CHECK_INTERVAL=-1
+FORCE_UPDATE_INTERVAL=1800
 
 if [ -f "/usr/local/etc/lxc-iptag.conf" ]; then
     # shellcheck source=./lxc-iptag.conf
@@ -22,6 +24,7 @@ fi
 ip_to_int() {
     local ip="${1}"
     local a b c d
+
     IFS=. read -r a b c d <<< "${ip}"
     echo "$((a << 24 | b << 16 | c << 8 | d))"
 }
@@ -30,6 +33,7 @@ ip_to_int() {
 ip_in_cidr() {
     local ip="${1}"
     local cidr="${2}"
+
     ip_int=$(ip_to_int "${ip}")
     netmask_int=$(ip_to_int "$(ipcalc -b "${cidr}" | grep Broadcast | awk '{print $2}')")
     masked_ip_int=$(( "${ip_int}" & "${netmask_int}" ))
@@ -40,10 +44,12 @@ ip_in_cidr() {
 ip_in_cidrs() {
     local ip="${1}"
     local cidrs=()
+
     mapfile -t cidrs < <(echo "${2}" | tr ' ' '\n')
     for cidr in "${cidrs[@]}"; do
         ip_in_cidr "${ip}" "${cidr}" && return 0
     done
+
     return 1
 }
 
@@ -51,6 +57,7 @@ ip_in_cidrs() {
 is_valid_ipv4() {
     local ip=$1
     local regex="^([0-9]{1,3}\.){3}[0-9]{1,3}$"
+
     if [[ $ip =~ $regex ]]; then
         IFS='.' read -r -a parts <<< "$ip"
         for part in "${parts[@]}"; do
@@ -61,6 +68,26 @@ is_valid_ipv4() {
         return 0
     else
         return 1
+    fi
+}
+
+lxc_status_changed() {
+    current_lxc_status=$(pct list 2>/dev/null)
+    if [ "${last_lxc_status}" == "${current_lxc_status}" ]; then
+        return 1
+    else
+        last_lxc_status="${current_lxc_status}"
+        return 0
+    fi
+}
+
+fw_net_interface_changed() {
+    current_net_interface=$(ifconfig | grep "^fw")
+    if [ "${last_net_interface}" == "${current_net_interface}" ]; then
+        return 1
+    else
+        last_net_interface="${current_net_interface}"
+        return 0
     fi
 }
 
@@ -100,17 +127,51 @@ update_lxc_iptags() {
 
         # Set tags
         echo "Setting ${vmid} tags from ${current_tags[*]} to ${next_tags[*]}"
-        fmted_next_tags=$(IFS=';'; echo "${next_tags[*]}")
-        pct set "${vmid}" -tags "${fmted_next_tags}"
+        pct set "${vmid}" -tags "$(IFS=';'; echo "${next_tags[*]}")"
     done
+}
+
+check() {
+    current_time=$(date +%s)
+
+    time_since_last_lxc_status_check=$((current_time - last_lxc_status_check_time))
+    if [[ "${LXC_STATUS_CHECK_INTERVAL}" -gt 0 ]] \
+        && [[ "${time_since_last_lxc_status_check}" -ge "${STATUS_CHECK_INTERVAL}" ]]; then
+        echo "Checking lxc status..."
+        last_lxc_status_check_time=${current_time}
+        if lxc_status_changed; then
+            update_lxc_iptags
+            last_update_time=${current_time}
+            return
+        fi
+    fi
+
+    time_since_last_fw_net_interface_check=$((current_time - last_fw_net_interface_check_time))
+    if [[ "${FW_NET_INTERFACE_CHECK_INTERVAL}" -gt 0 ]] \
+        && [[ "${time_since_last_fw_net_interface_check}" -ge "${FW_NET_INTERFACE_CHECK_INTERVAL}" ]]; then
+        echo "Checking fw net interface..."
+        last_fw_net_interface_check_time=${current_time}
+        if fw_net_interface_changed; then
+            update_lxc_iptags
+            last_update_time=${current_time}
+            return
+        fi
+    fi
+
+    time_since_last_update=$((current_time - last_update_time))
+    if [ ${time_since_last_update} -ge ${FORCE_UPDATE_INTERVAL} ]; then
+        echo "Force updating lxc iptags..."
+        update_lxc_iptags
+        last_update_time=${current_time}
+        return
+    fi
 }
 
 # main: Set the IP tags for all LXC containers
 main() {
     while true; do
-        update_lxc_iptags
-
-        sleep "${CHECK_INTERVAL}"
+        check
+        sleep "${LOOP_INTERVAL}"
     done
 }
 
