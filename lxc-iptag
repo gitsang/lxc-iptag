@@ -1,11 +1,24 @@
 #!/bin/bash
 
-cidr_list=(
+# =============== CONFIGURATION =============== #
+
+CIDR_LIST=(
     192.168.0.0/16
     100.64.0.0/10
     10.0.0.0/8
 )
 
+CHECK_INTERVAL=60
+
+if [ -f "/usr/local/etc/lxc-iptag.conf" ]; then
+    # shellcheck source=./lxc-iptag.conf
+    # shellcheck source=/usr/local/etc/lxc-iptag.conf
+    source /usr/local/etc/lxc-iptag.conf
+fi
+
+# =============== UTIL_FUNCTION =============== #
+
+# Convert IP to integer for comparison
 ip_to_int() {
     local ip="${1}"
     local a b c d
@@ -13,6 +26,7 @@ ip_to_int() {
     echo "$((a << 24 | b << 16 | c << 8 | d))"
 }
 
+# Check if IP is in CIDR
 ip_in_cidr() {
     local ip="${1}"
     local cidr="${2}"
@@ -22,14 +36,18 @@ ip_in_cidr() {
     [[ ${ip_int} -eq ${masked_ip_int} ]] && return 0 || return 1
 }
 
+# Check if IP is in any CIDRs
 ip_in_cidrs() {
     local ip="${1}"
-    for cidr in "${cidr_list[@]}"; do
+    local cidrs=()
+    mapfile -t cidrs < <(echo "${2}" | tr ' ' '\n')
+    for cidr in "${cidrs[@]}"; do
         ip_in_cidr "${ip}" "${cidr}" && return 0
     done
     return 1
 }
 
+# Check if IP is valid
 is_valid_ipv4() {
     local ip=$1
     local regex="^([0-9]{1,3}\.){3}[0-9]{1,3}$"
@@ -46,46 +64,53 @@ is_valid_ipv4() {
     fi
 }
 
-main() {
-    while true; do
-        # Set the IP tags for all LXC containers
-        lxc_name_list=$(pct list 2>/dev/null | grep -v VMID | awk '{print $1}')
-        for lxc_name in ${lxc_name_list}; do
-            new_tags=()
-            old_ips=()
-            new_ips=()
+# =============== MAIN =============== #
 
-            # Get tags
-            old_tags=$(pct config "${lxc_name}" | grep tags | awk '{print $2}' | sed 's/;/ /g')
-            for old_tag in ${old_tags}; do
-                if is_valid_ipv4 "${old_tag}"; then
-                    old_ips+=("${old_tag}")
-                    continue
-                fi
-                new_tags+=("${old_tag}")
-            done
+update_lxc_iptags() {
+    vmid_list=$(pct list 2>/dev/null | grep -v VMID | awk '{print $1}')
+    for vmid in ${vmid_list}; do
+        last_tagged_ips=()
+        current_valid_ips=()
+        next_tags=()
 
-            # Get the valid IPv4s
-            ips=$(lxc-info -n "${lxc_name}" -i | awk '{print $2}')
-            for ip in ${ips}; do
-                if is_valid_ipv4 "${ip}" && ip_in_cidrs "${ip}"; then
-                    new_ips+=("${ip}")
-                    new_tags+=("${ip}")
-                fi
-            done
-
-            # Skip if no change
-            if [[ "$(echo "${old_ips[@]}" | tr ' ' '\n' | sort -u)" == "$(echo "${new_ips[@]}" | tr ' ' '\n' | sort -u)" ]]; then
-                echo "Skipping ${lxc_name} cause ip no changes"
+        # Parse current tags
+        mapfile -t current_tags < <(pct config "${vmid}" | grep tags | awk '{print $2}' | sed 's/;/\n/g')
+        for current_tag in "${current_tags[@]}"; do
+            if is_valid_ipv4 "${current_tag}"; then
+                last_tagged_ips+=("${current_tag}")
                 continue
             fi
-
-            # Set the tags
-            joined_tags=$(IFS=';'; echo "${new_tags[*]}")
-            echo "Setting ${lxc_name} tags from ${old_tags} to ${joined_tags}"
-            pct set "${lxc_name}" -tags "${joined_tags}"
+            next_tags+=("${current_tag}")
         done
-        sleep 60
+
+        # Get current IPs
+        current_ips_full=$(lxc-info -n "${vmid}" -i | awk '{print $2}')
+        for ip in ${current_ips_full}; do
+            if is_valid_ipv4 "${ip}" && ip_in_cidrs "${ip}" "${CIDR_LIST[*]}"; then
+                current_valid_ips+=("${ip}")
+                next_tags+=("${ip}")
+            fi
+        done
+
+        # Skip if no ip change
+        if [[ "$(echo "${last_tagged_ips[@]}" | tr ' ' '\n' | sort -u)" == "$(echo "${current_valid_ips[@]}" | tr ' ' '\n' | sort -u)" ]]; then
+            echo "Skipping ${vmid} cause ip no changes"
+            continue
+        fi
+
+        # Set tags
+        echo "Setting ${vmid} tags from ${current_tags[*]} to ${next_tags[*]}"
+        fmted_next_tags=$(IFS=';'; echo "${next_tags[*]}")
+        pct set "${vmid}" -tags "${fmted_next_tags}"
+    done
+}
+
+# main: Set the IP tags for all LXC containers
+main() {
+    while true; do
+        update_lxc_iptags
+
+        sleep "${CHECK_INTERVAL}"
     done
 }
 
