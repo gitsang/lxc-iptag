@@ -7,7 +7,7 @@ lxc-iptag is a simple script to add ip tags to LXC containers.
 ## 1. Installation
 
 ```sh
-curl -sL https://github.com/gitsang/lxc-iptag/raw/main/install.sh | sudo bash
+curl -sL https://github.com/gitsang/lxc-iptag/raw/main/install.sh | bash
 ```
 
 This script will:
@@ -20,8 +20,8 @@ This script will:
 ### 1.1 Update
 
 ```sh
-sudo curl -sSL https://raw.githubusercontent.com/gitsang/lxc-iptag/main/lxc-iptag -o /usr/local/bin/lxc-iptag && sudo chmod +x /usr/local/bin/lxc-iptag
-sudo systemctl restart lxc-iptag.service
+curl -sSL https://raw.githubusercontent.com/gitsang/lxc-iptag/main/lxc-iptag -o /usr/local/bin/lxc-iptag && chmod +x /usr/local/bin/lxc-iptag
+systemctl restart lxc-iptag.service
 ```
 
 This script will only update the `lxc-iptag` executable script
