@@ -135,6 +135,7 @@ init() {
     current_time=$(date +%s)
     last_lxc_status_check_time=${current_time}
     last_fw_net_interface_check_time=${current_time}
+    fw_net_interface_changed
     last_update_time=0
 }
 
