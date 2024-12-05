@@ -131,6 +131,13 @@ update_lxc_iptags() {
     done
 }
 
+init() {
+    current_time=$(date +%s)
+    last_lxc_status_check_time=${current_time}
+    last_fw_net_interface_check_time=${current_time}
+    last_update_time=0
+}
+
 check() {
     current_time=$(date +%s)
 
@@ -169,6 +176,7 @@ check() {
 
 # main: Set the IP tags for all LXC containers
 main() {
+    init
     while true; do
         check
         sleep "${LOOP_INTERVAL}"
