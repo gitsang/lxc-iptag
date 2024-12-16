@@ -28,7 +28,7 @@ This script will only update the `lxc-iptag` executable script
 
 ## 2. Configure
 
-Open `/usr/local/ect/lxc-iptag.conf` and change the config
+Open `/usr/local/etc/lxc-iptag.conf` and change the config
 
 | Option                          | Example                                     | Description                                                                                             |
 | ------------------------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
