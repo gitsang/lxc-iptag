@@ -37,3 +37,16 @@ Open `/usr/local/etc/lxc-iptag.conf` and change the config
 | FW_NET_INTERFACE_CHECK_INTERVAL | `60`                                        | The interval(seconds) for using `ifconfig` to check lxc status changed (Set -1 to disable this feature) |
 | LXC_STATUS_CHECK_INTERVAL       | `-1`                                        | The interval(seconds) for using `pct list` to check lxc status changed (Set -1 to disable this feature) |
 | FORCE_UPDATE_INTERVAL           | `1800`                                      | The interval(seconds) for force check and update lxc tags                                               |
+
+## 3. Uninstall
+
+```sh
+# stop lxc-iptag
+systemctl stop lxc-iptag.service
+systemctl disable lxc-iptag.service
+
+# remove lxc-iptag
+rm -f /lib/systemd/system/lxc-iptag.service
+rm -f /usr/local/etc/lxc-iptag.conf
+rm -f /usr/local/bin/lxc-iptag
+```
