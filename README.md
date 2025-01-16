@@ -50,3 +50,15 @@ rm -f /lib/systemd/system/lxc-iptag.service
 rm -f /usr/local/etc/lxc-iptag.conf
 rm -f /usr/local/bin/lxc-iptag
 ```
+
+If you want to remove all lxc-iptag related datas (includes all ip tags), run the following command:
+
+This script will:
+
+- Stop and disable `lxc-iptag` systemd service
+- Remove pve all lxc ip tags
+- Delete all lxc-iptag related systemd unit, config file and script
+
+```sh
+curl -sL https://github.com/gitsang/lxc-iptag/raw/main/uninstall.sh | bash
+```
