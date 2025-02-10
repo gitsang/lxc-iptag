@@ -82,7 +82,7 @@ lxc_status_changed() {
 }
 
 fw_net_interface_changed() {
-    current_net_interface=$(ifconfig | grep "^fw")
+    current_net_interface=$(ip link | grep fw)
     if [ "${last_net_interface}" == "${current_net_interface}" ]; then
         return 1
     else
