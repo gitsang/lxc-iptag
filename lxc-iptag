@@ -96,6 +96,12 @@ fw_net_interface_changed() {
 update_lxc_iptags() {
     vmid_list=$(pct list 2>/dev/null | grep -v VMID | awk '{print $1}')
     for vmid in ${vmid_list}; do
+        # Check if the container ID is in the exclusion list
+        if [[ " ${EXCLUSION_LIST[*]} " == *" ${vmid} "* ]]; then
+            echo "Skipping ${vmid} as it is in the exclusion list"
+            continue
+        fi
+
         last_tagged_ips=()
         current_valid_ips=()
         next_tags=()
@@ -113,6 +119,12 @@ update_lxc_iptags() {
         # Get current IPs
         current_ips_full=$(lxc-info -n "${vmid}" -i | awk '{print $2}')
         for ip in ${current_ips_full}; do
+            # Check if the IP is in the exclusion list
+            if [[ " ${EXCLUSION_LIST[*]} " == *" ${ip} "* ]]; then
+                echo "Skipping IP ${ip} for container ${vmid} as it is in the exclusion list"
+                continue
+            fi
+
             if is_valid_ipv4 "${ip}" && ip_in_cidrs "${ip}" "${CIDR_LIST[*]}"; then
                 current_valid_ips+=("${ip}")
                 next_tags+=("${ip}")
