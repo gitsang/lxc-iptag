@@ -10,7 +10,7 @@ curl -sSL https://raw.githubusercontent.com/gitsang/lxc-iptag/main/lxc-iptag -o 
 curl -sSL https://raw.githubusercontent.com/gitsang/lxc-iptag/main/lxc-iptag.conf -o /usr/local/etc/lxc-iptag.conf
 
 # configure lxc-iptag systemd
-curl -sSL https://raw.githubusercontent.com/gitsang/lxc-iptag/main/lxc-iptag.service -o /lib/systemd/system/lxc-iptag.service
+curl -sSL https://raw.githubusercontent.com/gitsang/lxc-iptag/main/lxc-iptag.service -o /etc/systemd/system/lxc-iptag.service
 
 # start lxc-iptag
 systemctl daemon-reload
