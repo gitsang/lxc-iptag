@@ -32,7 +32,7 @@ Open `/usr/local/etc/lxc-iptag.conf` and change the config
 
 | Option                          | Example                                     | Description                                                                                             |
 | ------------------------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| CIDR_LIST                       | `(192.168.0.0/16 100.64.0.0/10 10.0.0.0/8)` | IP filter list in CIDR format                                                                           |
+| CIDR_LIST                       | `(192.168.0.0/16 172.16.0.0/12 10.0.0.0/8)` | IP filter list in CIDR format                                                                           |
 | LOOP_INTERVAL                   | `60`                                        | Main loop interval(seconds)                                                                             |
 | FW_NET_INTERFACE_CHECK_INTERVAL | `60`                                        | The interval(seconds) for using `ip link` to check lxc status changed (Set -1 to disable this feature) |
 | LXC_STATUS_CHECK_INTERVAL       | `-1`                                        | The interval(seconds) for using `pct list` to check lxc status changed (Set -1 to disable this feature) |
