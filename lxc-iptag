@@ -2,10 +2,15 @@
 
 # =============== CONFIGURATION =============== #
 
+# The first three are RFC1918 addresses which should be used inside your local network.
+# The last one is the RFC6598 address pool (CGNAT) used for ISPs to allocate to networks
+# without allocating all the routers public IP addresses. It has also been used by a lot
+# of VPN services for their internal addressing (e.g. Tailscale, Netbird).
 CIDR_LIST=(
     192.168.0.0/16
-    100.64.0.0/10
+    172.16.0.0/12
     10.0.0.0/8
+    100.64.0.0/10
 )
 LOOP_INTERVAL=60
 FW_NET_INTERFACE_CHECK_INTERVAL=60
