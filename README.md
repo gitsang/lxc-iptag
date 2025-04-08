@@ -38,6 +38,7 @@ Open `/usr/local/etc/lxc-iptag.conf` and change the config
 | LXC_STATUS_CHECK_INTERVAL       | `-1`                                        | The interval(seconds) for using `pct list` to check lxc status changed (Set -1 to disable this feature) |
 | FORCE_UPDATE_INTERVAL           | `1800`                                      | The interval(seconds) for force check and update lxc tags                                               |
 | EXCLUSION_LIST                  | see [lxc-iptag.conf](./lxc-iptag.conf)      | List of container id or ip to exclude from tagging                                                         |
+| ADD_HOSTNAME                    | `1` or `0`                                  | Enable or disable the option to add the hostname as a tag to the LXC Container                             |
 
 ## 3. Uninstall
 
