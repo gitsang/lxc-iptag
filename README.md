@@ -6,9 +6,9 @@ lxc-iptag is a simple script to add ip tags to LXC containers.
 
 This script is only a transitional solution for the official UI to support displaying IPs of LXC containers. See [Displaying IP of container in GUI?](https://forum.proxmox.com/threads/displaying-ip-of-container-in-gui.120841/#post-685752)
 
-> My original intention was to provide a script that is simple enough and easy to review, avoiding introducing too much complexity as much as possible. After all, this script may be replaced by official support in the near future, and shell scripts and tags are certainly not the best solution. Therefore, this script should not consider introducing too much complex logic or requirements.
+> My original intention was to provide a script that is simple enough and easy to review, avoiding introducing too much complexity as much as possible. After all, this script may be replaced by official support in the near future, and shell scripts and tags are certainly not the best solution. Therefore, this script may not consider introducing too much complex logic or requirements.
 >
-> Of course, simple scripts allow users to easily modify the script according to their needs with just a little knowledge of Shell scripting. So feel free to fork it. And to save your time, https://github.com/MorsStefan/proxmox-ip2tag is a cool project that supports more features, especially adding iptag support for VMs. You can first check if this project meets your needs.
+> Simple scripts allow users to easily modify the script according to their needs with just a little knowledge of Shell scripting. So feel free to fork it. And to save your time, https://github.com/MorsStefan/proxmox-ip2tag is a cool project that supports more features, especially adding iptag support for VMs. You can first check if this project meets your needs.
 
 ## 1. Installation
 
